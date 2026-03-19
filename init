@@ -1,0 +1,146 @@
+#!/bin/bash
+
+# ============================================================
+#  GitHub Base Project Initializer
+#  Usage: bash init_github_project.sh
+# ============================================================
+
+set -e  # Exit on any error
+
+# ---------- CONFIG (edit these) ----------
+REPO_NAME="my-base-project"
+GITHUB_USERNAME="your-github-username"
+DESCRIPTION="My base boilerplate project"
+PRIVATE=false   # true or false
+# -----------------------------------------
+
+echo "🚀 Initializing base project: $REPO_NAME"
+
+# 1. Create project folder & base files
+mkdir -p "$REPO_NAME"
+cd "$REPO_NAME"
+
+# Create a basic project structure
+mkdir -p src tests docs
+
+# README
+cat > README.md <<EOF
+# $REPO_NAME
+
+$DESCRIPTION
+
+## Getting Started
+
+\`\`\`bash
+# Clone the repo
+git clone https://github.com/$GITHUB_USERNAME/$REPO_NAME.git
+cd $REPO_NAME
+\`\`\`
+
+## Project Structure
+
+\`\`\`
+$REPO_NAME/
+├── src/          # Source code
+├── tests/        # Tests
+├── docs/         # Documentation
+└── README.md
+\`\`\`
+
+## License
+
+MIT
+EOF
+
+# .gitignore
+cat > .gitignore <<EOF
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.env
+
+# Build output
+dist/
+build/
+*.log
+EOF
+
+# Placeholder source file
+cat > src/main.py <<EOF
+# Entry point for $REPO_NAME
+
+def main():
+    print("Hello from $REPO_NAME!")
+
+if __name__ == "__main__":
+    main()
+EOF
+
+# LICENSE (MIT)
+YEAR=$(date +%Y)
+cat > LICENSE <<EOF
+MIT License
+
+Copyright (c) $YEAR $GITHUB_USERNAME
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+EOF
+
+echo "✅ Project files created."
+
+# 2. Initialize Git
+git init
+git add .
+git commit -m "Initial commit: base project boilerplate"
+
+echo "✅ Git initialized and base commit made."
+
+# 3. Create GitHub repo using GitHub CLI (gh)
+#    Install: https://cli.github.com/
+if command -v gh &> /dev/null; then
+    echo "🌐 Creating GitHub repository via GitHub CLI..."
+    gh repo create "$GITHUB_USERNAME/$REPO_NAME" \
+        --description "$DESCRIPTION" \
+        --public \
+        --source=. \
+        --remote=origin \
+        --push
+    echo "✅ Repo created and pushed to GitHub!"
+    echo "🔗 https://github.com/$GITHUB_USERNAME/$REPO_NAME"
+else
+    # Fallback: manual remote setup
+    echo "⚠️  GitHub CLI (gh) not found. Set up remote manually:"
+    echo ""
+    echo "   1. Create the repo on GitHub: https://github.com/new"
+    echo "   2. Then run:"
+    echo ""
+    echo "      git remote add origin https://github.com/$GITHUB_USERNAME/$REPO_NAME.git"
+    echo "      git branch -M main"
+    echo "      git push -u origin main"
+fi
