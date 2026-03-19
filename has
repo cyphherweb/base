@@ -1,0 +1,248 @@
+#!/bin/bash
+
+# ============================================================
+#  GitHub Base Project Initializer (Python)
+#  Usage: bash init_github_project.sh
+# ============================================================
+
+set -e  # Exit on any error
+
+# ---------- CONFIG (edit these) ----------
+REPO_NAME="my-base-project"
+GITHUB_USERNAME="your-github-username"
+DESCRIPTION="My base Python boilerplate project"
+PRIVATE=false               # true or false
+
+# --- Git Config ---
+GIT_USER_NAME="Your Name"
+GIT_USER_EMAIL="you@example.com"
+DEFAULT_BRANCH="main"       # e.g. main, master, develop
+COMMIT_MESSAGE="chore: initial Python project boilerplate"
+COMMIT_AUTHOR_NAME="$GIT_USER_NAME"
+COMMIT_AUTHOR_EMAIL="$GIT_USER_EMAIL"
+SIGN_COMMITS=false          # true requires a GPG key to be set up
+# -----------------------------------------
+
+echo "🚀 Initializing Python project: $REPO_NAME"
+
+# 1. Create project folder & Python structure
+mkdir -p "$REPO_NAME"
+cd "$REPO_NAME"
+
+mkdir -p src tests docs scripts
+
+# --- src/main.py ---
+cat > src/main.py <<EOF
+# Entry point for $REPO_NAME
+
+def main():
+    print("Hello from $REPO_NAME!")
+
+if __name__ == "__main__":
+    main()
+EOF
+
+# --- src/__init__.py ---
+touch src/__init__.py
+
+# --- tests/test_main.py ---
+cat > tests/test_main.py <<EOF
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+
+from main import main
+
+def test_main(capsys):
+    main()
+    captured = capsys.readouterr()
+    assert "Hello" in captured.out
+EOF
+
+# --- tests/__init__.py ---
+touch tests/__init__.py
+
+# --- requirements.txt ---
+cat > requirements.txt <<EOF
+# Add your Python dependencies here
+# Example:
+# requests==2.31.0
+# pytest==7.4.0
+pytest
+EOF
+
+# --- .gitignore (Python-specific) ---
+cat > .gitignore <<EOF
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+EOF
+
+# --- README.md ---
+cat > README.md <<HEREDOC
+# $REPO_NAME
+
+$DESCRIPTION
+
+## Getting Started
+
+\`\`\`bash
+# Clone the repo
+git clone https://github.com/$GITHUB_USERNAME/$REPO_NAME.git
+cd $REPO_NAME
+
+# Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate   # Windows: venv\\Scripts\\activate
+
+# Install dependencies
+pip install -r requirements.txt
+\`\`\`
+
+## Running the App
+
+\`\`\`bash
+python src/main.py
+\`\`\`
+
+## Running Tests
+
+\`\`\`bash
+pytest tests/
+\`\`\`
+
+## Project Structure
+
+\`\`\`
+$REPO_NAME/
+├── src/              # Source code
+│   ├── __init__.py
+│   └── main.py
+├── tests/            # Unit tests
+│   ├── __init__.py
+│   └── test_main.py
+├── docs/             # Documentation
+├── scripts/          # Utility scripts
+├── requirements.txt  # Python dependencies
+├── .gitignore
+└── README.md
+\`\`\`
+
+## License
+
+MIT
+HEREDOC
+
+# --- LICENSE (MIT) ---
+YEAR=$(date +%Y)
+cat > LICENSE <<EOF
+MIT License
+
+Copyright (c) $YEAR $GIT_USER_NAME
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+EOF
+
+echo "✅ Python project files created."
+
+# 2. Initialize Git with config
+git init
+
+# Set local Git identity for this repo
+git config user.name "$GIT_USER_NAME"
+git config user.email "$GIT_USER_EMAIL"
+
+# Rename default branch
+git checkout -b "$DEFAULT_BRANCH" 2>/dev/null || git checkout "$DEFAULT_BRANCH"
+
+# Stage all files
+git add .
+
+# Commit (with or without GPG signing)
+if [ "$SIGN_COMMITS" = true ]; then
+    git commit -S -m "$COMMIT_MESSAGE" \
+        --author="$COMMIT_AUTHOR_NAME <$COMMIT_AUTHOR_EMAIL>"
+else
+    git commit -m "$COMMIT_MESSAGE" \
+        --author="$COMMIT_AUTHOR_NAME <$COMMIT_AUTHOR_EMAIL>"
+fi
+
+echo "✅ Git initialized on branch '$DEFAULT_BRANCH' with commit:"
+echo "   \"$COMMIT_MESSAGE\""
+
+# 3. Push to GitHub
+if command -v gh &> /dev/null; then
+    echo "🌐 Creating GitHub repository via GitHub CLI..."
+
+    VISIBILITY_FLAG="--public"
+    if [ "$PRIVATE" = true ]; then
+        VISIBILITY_FLAG="--private"
+    fi
+
+    gh repo create "$GITHUB_USERNAME/$REPO_NAME" \
+        --description "$DESCRIPTION" \
+        $VISIBILITY_FLAG \
+        --source=. \
+        --remote=origin \
+        --push
+
+    echo "✅ Repo created and pushed to GitHub!"
+    echo "🔗 https://github.com/$GITHUB_USERNAME/$REPO_NAME"
+else
+    echo "⚠️  GitHub CLI (gh) not found. Set up remote manually:"
+    echo ""
+    echo "   1. Create the repo at: https://github.com/new"
+    echo "   2. Then run:"
+    echo ""
+    echo "      git remote add origin https://github.com/$GITHUB_USERNAME/$REPO_NAME.git"
+    echo "      git branch -M $DEFAULT_BRANCH"
+    echo "      git push -u origin $DEFAULT_BRANCH"
+fi
+
