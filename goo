@@ -1,0 +1,310 @@
+"""
+Enhanced Student Management System
+- Input validation for name and age
+- Search student by name
+- Update student details
+- Grade/subject support
+- Data persistence (JSON file)
+- Sorted listing
+"""
+
+import json
+import os
+
+DATA_FILE = "students_data.json"
+
+# ─────────────────────────────────────────────
+#  Data Persistence
+# ─────────────────────────────────────────────
+
+def load_students():
+    """Load students from JSON file if it exists."""
+    if os.path.exists(DATA_FILE):
+        with open(DATA_FILE, "r") as f:
+            return json.load(f)
+    return []
+
+def save_students(students):
+    """Save students list to JSON file."""
+    with open(DATA_FILE, "w") as f:
+        json.dump(students, f, indent=4)
+
+# ─────────────────────────────────────────────
+#  Validation Helpers
+# ─────────────────────────────────────────────
+
+def validate_name(name: str) -> bool:
+    """Name must be non-empty and contain only letters/spaces."""
+    return bool(name.strip()) and all(c.isalpha() or c.isspace() for c in name)
+
+def validate_age(age_str: str) -> bool:
+    """Age must be a positive integer between 5 and 100."""
+    return age_str.isdigit() and 5 <= int(age_str) <= 100
+
+def validate_grade(grade: str) -> bool:
+    """Grade must be a float between 0.0 and 100.0."""
+    try:
+        g = float(grade)
+        return 0.0 <= g <= 100.0
+    except ValueError:
+        return False
+
+def get_grade_letter(grade: float) -> str:
+    """Convert numeric grade to letter grade."""
+    if grade >= 90: return "A"
+    if grade >= 80: return "B"
+    if grade >= 70: return "C"
+    if grade >= 60: return "D"
+    return "F"
+
+# ─────────────────────────────────────────────
+#  Core Operations
+# ─────────────────────────────────────────────
+
+def add_student(students: list) -> None:
+    """Add a new student with name, age, and optional grade."""
+    print("\n── Add New Student ──")
+
+    # Name
+    while True:
+        name = input("Enter student name: ").strip().title()
+        if validate_name(name):
+            break
+        print("  ⚠  Name must contain only letters and spaces. Try again.")
+
+    # Check duplicate
+    if any(s["name"].lower() == name.lower() for s in students):
+        print(f"  ⚠  A student named '{name}' already exists.\n")
+        return
+
+    # Age
+    while True:
+        age_str = input("Enter student age (5–100): ").strip()
+        if validate_age(age_str):
+            age = int(age_str)
+            break
+        print("  ⚠  Age must be a whole number between 5 and 100. Try again.")
+
+    # Subject
+    subject = input("Enter subject (leave blank to skip): ").strip()
+
+    # Grade
+    grade = None
+    if subject:
+        while True:
+            grade_str = input(f"Enter grade for {subject} (0–100, or leave blank): ").strip()
+            if grade_str == "":
+                break
+            if validate_grade(grade_str):
+                grade = float(grade_str)
+                break
+            print("  ⚠  Grade must be a number between 0 and 100.")
+
+    student = {
+        "name": name,
+        "age": age,
+        "subject": subject if subject else "N/A",
+        "grade": grade,
+    }
+    students.append(student)
+    save_students(students)
+    print(f"  ✅ Student '{name}' added successfully!\n")
+
+
+def view_students(students: list, pause: bool = True) -> None:
+    """Display all students in a formatted table, sorted by name."""
+    print("\n── Student List ──")
+    if not students:
+        print("  No students found.\n")
+        return
+
+    sorted_students = sorted(students, key=lambda s: s["name"].lower())
+    print(f"  {'#':<4} {'Name':<20} {'Age':<6} {'Subject':<15} {'Grade':<8} {'Letter'}")
+    print("  " + "─" * 60)
+    for i, s in enumerate(sorted_students, 1):
+        grade_display = f"{s['grade']:.1f}" if s["grade"] is not None else "—"
+        letter = get_grade_letter(s["grade"]) if s["grade"] is not None else "—"
+        print(f"  {i:<4} {s['name']:<20} {s['age']:<6} {s['subject']:<15} {grade_display:<8} {letter}")
+    print(f"\n  Total students: {len(students)}\n")
+
+    if pause:
+        input("  Press Enter to continue...")
+
+
+def search_student(students: list) -> None:
+    """Search for a student by partial name match."""
+    print("\n── Search Student ──")
+    query = input("Enter name to search: ").strip().lower()
+    if not query:
+        print("  ⚠  Search query cannot be empty.\n")
+        return
+
+    results = [s for s in students if query in s["name"].lower()]
+    if not results:
+        print(f"  No student found matching '{query}'.\n")
+    else:
+        print(f"\n  Found {len(results)} result(s):")
+        for s in results:
+            grade_display = f"{s['grade']:.1f} ({get_grade_letter(s['grade'])})" if s["grade"] is not None else "—"
+            print(f"    • {s['name']} | Age: {s['age']} | {s['subject']}: {grade_display}")
+    print()
+    input("  Press Enter to continue...")
+
+
+def update_student(students: list) -> None:
+    """Update an existing student's details."""
+    print("\n── Update Student ──")
+    view_students(students, pause=False)
+    if not students:
+        return
+
+    while True:
+        try:
+            idx = int(input("  Enter student number to update (0 to cancel): ")) - 1
+            if idx == -1:
+                return
+            if 0 <= idx < len(students):
+                break
+            print(f"  ⚠  Enter a number between 1 and {len(students)}.")
+        except ValueError:
+            print("  ⚠  Please enter a valid number.")
+
+    # Use sorted order, same as view_students
+    sorted_students = sorted(students, key=lambda s: s["name"].lower())
+    student = sorted_students[idx]
+    real_idx = students.index(student)
+
+    print(f"\n  Editing: {student['name']} (leave blank to keep current value)")
+
+    new_name = input(f"  New name [{student['name']}]: ").strip().title()
+    if new_name and validate_name(new_name):
+        students[real_idx]["name"] = new_name
+    elif new_name:
+        print("  ⚠  Invalid name. Keeping original.")
+
+    new_age = input(f"  New age [{student['age']}]: ").strip()
+    if new_age and validate_age(new_age):
+        students[real_idx]["age"] = int(new_age)
+    elif new_age:
+        print("  ⚠  Invalid age. Keeping original.")
+
+    new_subject = input(f"  New subject [{student['subject']}]: ").strip()
+    if new_subject:
+        students[real_idx]["subject"] = new_subject
+
+    new_grade = input(f"  New grade [{student['grade'] if student['grade'] is not None else '—'}]: ").strip()
+    if new_grade and validate_grade(new_grade):
+        students[real_idx]["grade"] = float(new_grade)
+    elif new_grade:
+        print("  ⚠  Invalid grade. Keeping original.")
+
+    save_students(students)
+    print(f"  ✅ Student updated successfully!\n")
+    input("  Press Enter to continue...")
+
+
+def delete_student(students: list) -> None:
+    """Delete a student by number with confirmation."""
+    print("\n── Delete Student ──")
+    view_students(students, pause=False)
+    if not students:
+        return
+
+    while True:
+        try:
+            idx = int(input("  Enter student number to delete (0 to cancel): ")) - 1
+            if idx == -1:
+                return
+            if 0 <= idx < len(students):
+                break
+            print(f"  ⚠  Enter a number between 1 and {len(students)}.")
+        except ValueError:
+            print("  ⚠  Please enter a valid number.")
+
+    sorted_students = sorted(students, key=lambda s: s["name"].lower())
+    student = sorted_students[idx]
+    real_idx = students.index(student)
+
+    confirm = input(f"  Are you sure you want to delete '{student['name']}'? (yes/no): ").strip().lower()
+    if confirm == "yes":
+        students.pop(real_idx)
+        save_students(students)
+        print(f"  🗑  Removed '{student['name']}' successfully.\n")
+    else:
+        print("  Deletion cancelled.\n")
+
+    input("  Press Enter to continue...")
+
+
+def show_statistics(students: list) -> None:
+    """Show basic statistics about the students."""
+    print("\n── Statistics ──")
+    if not students:
+        print("  No data available.\n")
+        input("  Press Enter to continue...")
+        return
+
+    ages = [s["age"] for s in students]
+    graded = [s["grade"] for s in students if s["grade"] is not None]
+
+    print(f"  Total Students  : {len(students)}")
+    print(f"  Average Age     : {sum(ages)/len(ages):.1f}")
+    print(f"  Youngest        : {min(ages)}")
+    print(f"  Oldest          : {max(ages)}")
+
+    if graded:
+        avg_grade = sum(graded) / len(graded)
+        print(f"  Graded Students : {len(graded)}")
+        print(f"  Average Grade   : {avg_grade:.1f} ({get_grade_letter(avg_grade)})")
+        print(f"  Highest Grade   : {max(graded):.1f}")
+        print(f"  Lowest Grade    : {min(graded):.1f}")
+    print()
+    input("  Press Enter to continue...")
+
+# ─────────────────────────────────────────────
+#  Menu
+# ─────────────────────────────────────────────
+
+def clear_screen():
+    os.system("cls" if os.name == "nt" else "clear")
+
+def menu():
+    students = load_students()
+
+    while True:
+        clear_screen()
+        print("╔══════════════════════════════════════╗")
+        print("║     Student Management System  v2    ║")
+        print("╠══════════════════════════════════════╣")
+        print("║  1. Add Student                      ║")
+        print("║  2. View All Students                ║")
+        print("║  3. Search Student                   ║")
+        print("║  4. Update Student                   ║")
+        print("║  5. Delete Student                   ║")
+        print("║  6. Statistics                       ║")
+        print("║  7. Exit                             ║")
+        print("╚══════════════════════════════════════╝")
+        print(f"  Records loaded: {len(students)}")
+        choice = input("\n  Enter your choice (1–7): ").strip()
+
+        if choice == "1":
+            add_student(students)
+        elif choice == "2":
+            view_students(students)
+        elif choice == "3":
+            search_student(students)
+        elif choice == "4":
+            update_student(students)
+        elif choice == "5":
+            delete_student(students)
+        elif choice == "6":
+            show_statistics(students)
+        elif choice == "7":
+            print("\n  👋 Goodbye!\n")
+            break
+        else:
+            print("  ⚠  Invalid choice. Please enter 1–7.\n")
+            input("  Press Enter to continue...")
+
+if __name__ == "__main__":
+    menu()
