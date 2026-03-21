@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GitHub Commit Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --green: #3fb950;
+    --green-dim: #1a3a23;
+    --blue: #58a6ff;
+    --orange: #f0883e;
+    --red: #f85149;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --prompt: #7ee787;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    padding: 40px 20px 60px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+
+  header h1 {
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 800;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, var(--green) 0%, var(--blue) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  header p {
+    color: var(--muted);
+    margin-top: 8px;
+    font-size: 0.95rem;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .step:hover { border-color: var(--green); }
+
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .step-num {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--green-dim);
+    border: 1.5px solid var(--green);
+    color: var(--green);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .step-title {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text);
+  }
+
+  .step-desc {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .step-body { padding: 16px 20px; }
+
+  /* Terminal block */
+  .terminal {
+    background: #010409;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+  }
+
+  .terminal-bar {
+    background: #21262d;
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot.red { background: #ff5f57; }
+  .dot.yellow { background: #febc2e; }
+  .dot.green { background: #28c840; }
+
+  .terminal-label {
+    margin-left: auto;
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-family: 'Syne', sans-serif;
+  }
+
+  .terminal-content {
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .cmd-line {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 4px;
+    transition: background 0.15s;
+  }
+
+  .cmd-line:hover { background: #161b22; }
+
+  .prompt-sym { color: var(--prompt); user-select: none; flex-shrink: 0; }
+
+  .cmd { color: var(--text); flex: 1; word-break: break-all; }
+
+  .cmd .kw { color: var(--blue); }
+  .cmd .flag { color: var(--orange); }
+  .cmd .str { color: var(--green); }
+  .cmd .comment { color: var(--muted); font-style: italic; }
+
+  .copy-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+
+  .copy-btn:hover { border-color: var(--green); color: var(--green); }
+  .copy-btn.copied { border-color: var(--green); color: var(--green); }
+
+  .note {
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.6;
+    padding: 10px 12px;
+    background: #1c2128;
+    border-left: 3px solid var(--blue);
+    border-radius: 0 6px 6px 0;
+    margin-top: 10px;
+  }
+
+  .note strong { color: var(--blue); }
+
+  .note code {
+    font-family: 'JetBrains Mono', monospace;
+    background: #0d1117;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.8rem;
+    color: var(--orange);
+  }
+
+  /* Commit types */
+  .type-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .type-card {
+    background: #010409;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .type-card:hover { border-color: var(--green); background: var(--green-dim); }
+
+  .type-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--green);
+    font-weight: 600;
+  }
+
+  .type-desc {
+    font-size: 0.73rem;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  /* Divider */
+  .flow-arrow {
+    text-align: center;
+    color: var(--border);
+    font-size: 1.4rem;
+    line-height: 1;
+  }
+
+  /* Quick ref */
+  .quick-ref {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 8px;
+  }
+
+  .quick-ref h3 {
+    font-size: 0.9rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+  }
+
+  .full-flow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    background: #010409;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .fl { display: flex; align-items: center; gap: 10px; }
+  .fl .prompt-sym { color: var(--prompt); }
+  .fl .cmd-text { color: var(--text); }
+  .fl .cmd-text .kw { color: var(--blue); }
+  .fl .cmd-text .str { color: var(--green); }
+  .fl .cmd-text .flag { color: var(--orange); }
+  .fl .inline-comment { color: var(--muted); margin-left: auto; font-size: 0.75rem; }
+
+  footer {
+    text-align: center;
+    margin-top: 40px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  footer span { color: var(--green); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>GitHub Commit Guide</h1>
+  <p>// git workflow from init to push</p>
+</header>
+
+<div class="container">
+
+  <!-- Step 1 -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-num">1</div>
+      <div>
+        <div class="step-title">Initialize or Clone a Repository</div>
+        <div class="step-desc">Set up your local repo</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="terminal">
+        <div class="terminal-bar">
+          <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+          <span class="terminal-label">bash</span>
+        </div>
+        <div class="terminal-content">
+          <div class="cmd-line" onclick="copyCmd(this, 'git init')">
+            <span class="prompt-sym">$</span>
+            <span class="cmd"><span class="kw">git</span> init</span>
+            <button class="copy-btn">copy</button>
+          </div>
+          <div class="cmd-line" onclick="copyCmd(this, 'git clone https://github.com/username/repo.git')">
+            <span class="prompt-sym">$</span>
+            <span class="cmd"><span class="kw">git</span> clone <span class="str">https://github.com/username/repo.git</span></span>
+            <button class="copy-btn">copy</button>
+          </div>
+        </div>
+      </div>
+      <div class="note"><strong>Tip:</strong> Use <code>git init</code> for a new project, or <code>git clone</code> to copy an existing GitHub repo to your machine.</div>
+    </div>
+  </div>
+
+  <div class="flow-arrow">↓</div>
+
+  <!-- Step 2 -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-num">2</div>
+      <div>
+        <div class="step-title">Check Status</div>
+        <div class="step-desc">See what files have changed</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="terminal">
+        <div class="terminal-bar">
+          <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+          <span class="terminal-label">bash</span>
+        </div>
+        <div class="terminal-content">
+          <div class="cmd-line" onclick="copyCmd(this, 'git status')">
+            <span class="prompt-sym">$</span>
+            <span class="cmd"><span class="kw">git</span> status</span>
+            <button class="copy-btn">copy</button>
+          </div>
+        </div>
+      </div>
+      <div class="note">Shows <strong>untracked</strong>, <strong>modified</strong>, and <strong>staged</strong> files. Always run this before staging.</div>
+    </div>
+  </div>
+
+  <div class="flow-arrow">↓</div>
+
+  <!-- Step 3 -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-num">3</div>
+      <div>
+        <div class="step-title">Stage Files</div>
+        <div class="step-desc">Add changes to the staging area</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="terminal">
+        <div class="terminal-bar">
+          <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+          <span class="terminal-label">bash</span>
+        </div>
+        <div class="terminal-content">
+          <div class="cmd-line" onclick="copyCmd(this, 'git add .')">
+            <span class="prompt-sym">$</span>
+            <span class="cmd"><span class="kw">git</span> add <span class="flag">.</span> &nbsp;&nbsp;<span class="comment"># stage all files</span></span>
+            <button class="copy-btn">copy</button>
+          </div>
+          <div class="cmd-line" onclick="copyCmd(this, 'git add filename.txt')">
+            <span class="prompt-sym">$</span>
+            <span class="cmd"><span class="kw">git</span> add <span class="str">filename.txt</span> &nbsp;&nbsp;<span class="comment"># stage one file</span></span>
+            <button class="copy-btn">copy</button>
+          </div>
+          <div class="cmd-line" onclick="copyCmd(this, 'git add -p')">
+            <span class="prompt-sym">$</span>
+            <span class="cmd"><span class="kw">git</span> add <span class="flag">-p</span> &nbsp;&nbsp;<span class="comment"># stage interactively (hunk by hunk)</span></span>
+            <button class="copy-btn">copy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-arrow">↓</div>
+
+  <!-- Step 4 -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-num">4</div>
+      <div>
+        <div class="step-title">Commit Changes</div>
+        <div class="step-desc">Save a snapshot with a message</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="terminal">
+        <div class="terminal-bar">
+          <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+          <span class="terminal-label">bash</span>
+        </div>
+        <div class="terminal-content">
+          <div class="cmd-line" onclick="copyCmd(this, 'git commit -m \"feat: add login feature\"')">
+            <span class="prompt-sym">$</span>
+            <span class="cmd"><span class="kw">git</span> commit <span class="flag">-m</span> <span class="str">"feat: add login feature"</span></span>
+            <button class="copy-btn">copy</button>
+          </div>
+          <div class="cmd-line" onclick="copyCmd(this, 'git commit -am \"fix: resolve null pointer bug\"')">
+            <span class="prompt-sym">$</span>
+            <span class="cmd"><span class="kw">git</span> commit <span class="flag">-am</span> <span class="str">"fix: resolve null pointer bug"</span> &nbsp;&nbsp;<span class="comment"># add + commit tracked files</span></span>
+            <button class="copy-btn">copy</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="note" style="margin-bottom:12px;"><strong>Conventional Commit Types</strong> — click to copy</div>
+      <div class="type-grid" id="typeGrid">
+        <div class="type-card" onclick="copyText('feat')"><div class="type-tag">feat</div><div class="type-desc">New feature</div></div>
+        <div class="type-card" onclick="copyText('fix')"><div class="type-tag">fix</div><div class="type-desc">Bug fix</div></div>
+        <div class="type-card" onclick="copyText('docs')"><div class="type-tag">docs</div><div class="type-desc">Documentation only</div></div>
+        <div class="type-card" onclick="copyText('style')"><div class="type-tag">style</div><div class="type-desc">Formatting, no logic</div></div>
+        <div class="type-card" onclick="copyText('refactor')"><div class="type-tag">refactor</div><div class="type-desc">Code restructure</div></div>
+        <div class="type-card" onclick="copyText('test')"><div class="type-tag">test</div><div class="type-desc">Adding tests</div></div>
+        <div class="type-card" onclick="copyText('chore')"><div class="type-tag">chore</div><div class="type-desc">Build/config tasks</div></div>
+        <div class="type-card" onclick="copyText('perf')"><div class="type-tag">perf</div><div class="type-desc">Performance improvement</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-arrow">↓</div>
+
+  <!-- Step 5 -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-num">5</div>
+      <div>
+        <div class="step-title">Push to GitHub</div>
+        <div class="step-desc">Upload your commits to the remote</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="terminal">
+        <div class="terminal-bar">
+          <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+          <span class="terminal-label">bash</span>
+        </div>
+        <div class="terminal-content">
+          <div class="cmd-line" onclick="copyCmd(this, 'git push origin main')">
+            <span class="prompt-sym">$</span>
+            <span class="cmd"><span class="kw">git</span> push origin <span class="str">main</span></span>
+            <button class="copy-btn">copy</button>
+          </div>
+          <div class="cmd-line" onclick="copyCmd(this, 'git push -u origin main')">
+            <span class="prompt-sym">$</span>
+            <span class="cmd"><span class="kw">git</span> push <span class="flag">-u</span> origin <span class="str">main</span> &nbsp;&nbsp;<span class="comment"># first push — sets upstream</span></span>
+            <button class="copy-btn">copy</button>
+          </div>
+          <div class="cmd-line" onclick="copyCmd(this, 'git push --force-with-lease')">
+            <span class="prompt-sym">$</span>
+            <span class="cmd"><span class="kw">git</span> push <span class="flag">--force-with-lease</span> &nbsp;&nbsp;<span class="comment"># safe force push</span></span>
+            <button class="copy-btn">copy</button>
+          </div>
+        </div>
+      </div>
+      <div class="note"><strong>Note:</strong> Replace <code>main</code> with your branch name if different (e.g., <code>master</code>, <code>dev</code>).</div>
+    </div>
+  </div>
+
+  <!-- Full flow quick ref -->
+  <div class="quick-ref">
+    <h3>⚡ Full Workflow at a Glance</h3>
+    <div class="full-flow">
+      <div class="fl"><span class="prompt-sym">$</span><span class="cmd-text"><span class="kw">git</span> status</span><span class="inline-comment">check changes</span></div>
+      <div class="fl"><span class="prompt-sym">$</span><span class="cmd-text"><span class="kw">git</span> add <span class="flag">.</span></span><span class="inline-comment">stage all</span></div>
+      <div class="fl"><span class="prompt-sym">$</span><span class="cmd-text"><span class="kw">git</span> commit <span class="flag">-m</span> <span class="str">"type: message"</span></span><span class="inline-comment">commit</span></div>
+      <div class="fl"><span class="prompt-sym">$</span><span class="cmd-text"><span class="kw">git</span> push origin <span class="str">main</span></span><span class="inline-comment">push to GitHub</span></div>
+    </div>
+  </div>
+
+</div>
+
+<footer>made with <span>♥</span> · hover commands to copy</footer>
+
+<script>
+  function copyCmd(el, text) {
+    const btn = el.querySelector('.copy-btn');
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = '✓ copied';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('copied'); }, 1500);
+    });
+  }
+
+  function copyText(text) {
+    navigator.clipboard.writeText(text).then(() => {
+      const cards = document.querySelectorAll('.type-card');
+      cards.forEach(c => {
+        if (c.querySelector('.type-tag').textContent === text) {
+          const orig = c.querySelector('.type-desc').textContent;
+          c.querySelector('.type-desc').textContent = '✓ copied!';
+          setTimeout(() => c.querySelector('.type-desc').textContent = orig, 1200);
+        }
+      });
+    });
+  }
+</script>
+</body>
+</html>
