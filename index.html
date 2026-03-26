@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TaskFlow</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header>
+    <h1>⚡ TaskFlow</h1>
+    <p class="subtitle">Stay organized. Move fast.</p>
+  </header>
+
+  <main>
+    <!-- Add Task Form -->
+    <section class="card add-task">
+      <h2>Add a Task</h2>
+      <form action="/add" method="POST">
+        <input type="text" name="title" placeholder="Task title..." required />
+        <select name="priority">
+          <option value="Low">🟢 Low</option>
+          <option value="Medium" selected>🟡 Medium</option>
+          <option value="High">🔴 High</option>
+        </select>
+        <input type="date" name="due_date" />
+        <button type="submit">+ Add Task</button>
+      </form>
+    </section>
+
+    <!-- Filter Bar -->
+    <section class="filters">
+      <a href="/" class="{{ 'active' if not filter }}">All</a>
+      <a href="/?priority=High" class="{{ 'active' if filter == 'High' }}">🔴 High</a>
+      <a href="/?priority=Medium" class="{{ 'active' if filter == 'Medium' }}">🟡 Medium</a>
+      <a href="/?priority=Low" class="{{ 'active' if filter == 'Low' }}">🟢 Low</a>
+    </section>
+
+    <!-- Task List -->
+    <section class="task-list">
+      {% if tasks %}
+        {% for task in tasks %}
+        <div class="task-card {{ 'completed' if task.completed }} priority-{{ task.priority | lower }}">
+          <div class="task-info">
+            <span class="task-title">{{ task.title }}</span>
+            <span class="task-meta">
+              <span class="badge {{ task.priority | lower }}">{{ task.priority }}</span>
+              {% if task.due_date %}
+                <span class="due">📅 {{ task.due_date.strftime('%b %d, %Y') }}</span>
+              {% endif %}
+            </span>
+          </div>
+          <div class="task-actions">
+            <form action="/complete/{{ task.id }}" method="POST">
+              <button type="submit" class="btn-complete" title="Toggle complete">
+                {{ '✅' if task.completed else '⬜' }}
+              </button>
+            </form>
+            <form action="/delete/{{ task.id }}" method="POST" onsubmit="return confirm('Delete this task?')">
+              <button type="submit" class="btn-delete" title="Delete">🗑️</button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="empty">No tasks yet. Add one above!</p>
+      {% endif %}
+    </section>
+  </main>
+</body>
+</html>
